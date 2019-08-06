@@ -1,0 +1,41 @@
+---
+title: "R Data Cleaning Tutorial - Breaking the Data"
+output: html_notebook
+---
+
+This notebook is designed to provide a replicable process for building a dataset that contains issues that will then be used in the demonstration of methods for "cleaning" data prior to analysis 
+
+
+Import the source data and save a local copy
+```{r}
+rawData <- read.csv("https://ndownloader.figshare.com/files/9582724")
+write.csv(rawData, file = "../data/rawData.csv")
+```
+
+Generate some DMS versions of the provided DD columns
+```{r}
+rm("learning")
+learning <- rawData
+learning$latDeg <- unlist(floor(learning['decimalLatitude']))
+learning$latMin <- floor((learning['decimalLatitude'] - learning$latDeg) * 60)
+learning$latSec <- round((((learning['decimalLatitude'] - learning$latDeg) - (learning$latMin/60)) * 3600), 3)
+learning$latDMS <- apply(learning, 1, function(x) paste(x['latDeg'],"°", x['latMin'],"'", x['latSec'], "\"N", sep=""))
+
+learning$lonDeg <- floor(learning['decimalLongitude'])
+learning$lonMin <- floor((learning['decimalLongitude'] - learning$lonDeg) * 60)
+learning$lonSec <- round((((learning['decimalLongitude'] - learning$lonDeg) - (learning$lonMin/60)) * 3600), 3)
+learning$lonDMS <- apply(learning, 1, function(x) paste(x['lonDeg'],"°", x['lonMin'],"'", x['lonSec'], "\"E", sep=""))
+learning <- subset(learning, select = -c(latDeg, latMin, latSec, lonDeg, lonMin, lonSec))
+```
+
+Generate a column of mixed data types
+```{r}
+learning <- subset(learning, select = -c(textLatDD))
+learning$textLatDD <- as.character(learning$decimalLatitude)
+learning$textLatDD[is.na(learning$textLatDD)] <- "missing"
+```
+
+Write out the learning data file
+```{r}
+write.csv(learning, file = "../data/learning.csv")
+```
