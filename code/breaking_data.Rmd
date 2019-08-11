@@ -30,7 +30,7 @@ learning <- subset(learning, select = -c(latDeg, latMin, latSec, lonDeg, lonMin,
 
 Generate a column of mixed data types
 ```{r}
-learning <- subset(learning, select = -c(textLatDD))
+#learning <- subset(learning, select = -c(textLatDD))
 learning$textLatDD <- as.character(learning$decimalLatitude)
 learning$textLatDD[is.na(learning$textLatDD)] <- "missing"
 ```

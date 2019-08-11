@@ -1,0 +1,106 @@
+---
+title: "Cleaning Data"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Cleaning Data In R
+
+When planning a data analysis the first, and often most time consuming, step is the acquire and process the data into a form that can be used in the analytic procedures you intend to use. Today we are going to focus on a sequence of steps that generally follow the workflow that you will find yourself going through when bringing data into R to perform analysis. 
+
+![Portion of *R for Data Science*^[Hadley Wickham & Garrett Grolemund. 2017. *R for Data Science*. O’Reilly. [https://r4ds.had.co.nz](https://r4ds.had.co.nz) ] workflow](images/tidy_workflow.png)
+
+### Deal with issues that may come up when importing data files
+
+1. Identify and correct structural issues in the source data that prevent clean import into R data structures
+2. Check and handle missing data values
+3. Check and handle data type errors
+4. Identify fields that require processing due to inconsistent content structure
+
+### Tuning up the structure of the data to facilitate analysis
+
+5. Split up fields that contain mutiple values in a single field
+6. Check for anomalous values and otherwise explore the data to become familiar with its content and structure. 
+
+*Beyond what we will cover today* - continued structural changes and the rest of the exploration, analysis, and communication process. 
+
+### Data for today's demonstration
+
+The data for this demonstration is based upon the [idigbio_rodents.csv](https://figshare.com/articles/idigbio_rodents_csv/5535724) dataset. The data are described as follows in the repository where they are shared:
+
+> The idigbio_rodents.csv dataset is just over 10k records and contains data from natural history collections specimen records representing 5 genera from 4 major US collections, limited to US records. All records are from the Order Rodentia. All the data are mapped to the biodiversity data standard Darwin Core (http://rs.tdwg.org/dwc/terms/).
+
+The original data have been modified for use in this demonstration by:
+
+1. Generating new data columns (`latDMS` and `lonDMS`) for latitude and longitude that have sample coordinates presented in Degrees-Minutes-Seconds instead of the originally provided decimal degrees.
+2. Generating a column of mixed numeric and text values - `textLatDD`. 
+
+This is the `../data/learning.csv` file. These newly created columns in addition to some of the originally provided ones will be used to demonstrate a variety of data cleaning steps in R.
+
+An additional file was developed that only includes the first 10 rows of the file (including headers) but introduces a strucutral error. This file is the `../data/learning_struct.csv` file. 
+
+### R libraries used in the demonstration
+
+For this demonstration a set of R packages that are part of the [*Tidyverse*](https://www.tidyverse.org). The tidyverse collection of packages provide (as described on the project's homepage):
+
+> an opinionated collection of R packages designed for data science. All packages share an underlying design philosophy, grammar, and data structures. 
+
+There are currently over 14,000 R [packages](https://cran.r-project.org/web/packages/index.html) in the [Comprehensive R Archive Network (CRAN)](https://cran.r-project.org/index.html). While the tidyverse packages provide a useful degree of consistency and internal interoperablity it is strongly encouraged to examine the broad collection of R packages when working on a particular analysis problem. 
+
+If you need to install the tidyverse packages in your enviornment you can execute the `install.packages("tidyverse")` command. 
+
+## 1. Identify and correct structural issues in the source data that prevent clean import into R data structures
+
+R can import a wide variety of *rectangular* data structures: comma-delimited, tab-delimited, excel spreadsheets, fixed-width among the many options. If there are errors in the structure of these files, R import commands may not be able to parse the lines in the data file preventing import. In these cases the returned error messages may provide some clues to where the errors may be found.  
+
+**One strategy for identifying potential strucutral issues in the source file is to try to import the dataset and review any errors that are returned**
+
+Let's try it first with a small file ...
+
+```{r}
+library(tidyverse)
+
+# Import the source CSV file that contains a structural flaw
+rawDataStruct <- read_csv("../data/learning_struct.csv", 
+                    progress = FALSE)
+
+# Display the column definitions for the imported dataset
+spec(rawDataStruct)
+
+# Report the problems that were encountered when the data were imported.
+problems(rawDataStruct)
+
+# Display the imported table
+rawDataStruct
+```
+
+Let's take a look at the source data file and see if we can find the problem...
+
+Now let's try it with the full dataset
+
+```{r}
+library(tidyverse)
+
+# Import the source CSV file that contains a structural flaw
+rawData <- read_csv("../data/learning.csv", 
+                    progress = FALSE)
+
+# Display the column definitions for the imported dataset
+spec(rawData)
+
+# Report the problems that were encountered when the data were imported.
+problems(rawData)
+
+# Display the imported table
+rawData
+```
+
+Some questions:
+
+1. How do the data types for the columns from this import process differ from those in the previous subset (at least before we fixed it)? Why do you think this is the case?
+2. Where there any errors identified during the import? If no, does this mean that there are no potential problems or issues with the imported data? **Let's take a look**
+3. How would you explain the values in the `eventDate` column when compared to the `year`, `month`, and `day` columns?
+4. What were the different ways in which missing data values were handled?
