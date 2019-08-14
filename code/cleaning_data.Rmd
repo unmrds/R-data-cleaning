@@ -9,6 +9,10 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Cleaning Data In R
 
+GitHub Repository with this demonstration: [https://github.com/unmrds/R-data-cleaning](https://github.com/unmrds/R-data-cleaning)
+
+Zipfile Download: [https://github.com/unmrds/R-data-cleaning/archive/master.zip](https://github.com/unmrds/R-data-cleaning/archive/master.zip)
+
 When planning a data analysis the first, and often most time consuming, step is the acquire and process the data into a form that can be used in the analytic procedures you intend to use. Today we are going to focus on a sequence of steps that generally follow the workflow that you will find yourself going through when bringing data into R to perform analysis. 
 
 ![Portion of *R for Data Science*^[Hadley Wickham & Garrett Grolemund. 2017. *R for Data Science*. O’Reilly. [https://r4ds.had.co.nz](https://r4ds.had.co.nz) ] workflow](images/tidy_workflow.png)
@@ -16,14 +20,13 @@ When planning a data analysis the first, and often most time consuming, step is 
 ### Deal with issues that may come up when importing data files
 
 1. Identify and correct structural issues in the source data that prevent clean import into R data structures
-2. Check and handle missing data values
-3. Check and handle data type errors
-4. Identify fields that require processing due to inconsistent content structure
+2. Check and handle data type errors
+3. Check and handle missing data values
 
 ### Tuning up the structure of the data to facilitate analysis
 
-5. Split up fields that contain mutiple values in a single field
-6. Check for anomalous values and otherwise explore the data to become familiar with its content and structure. 
+4. Split up fields that contain mutiple values in a single field
+5. Check for anomalous values and otherwise explore the data to become familiar with its content and structure. 
 
 *Beyond what we will cover today* - continued structural changes and the rest of the exploration, analysis, and communication process. 
 
@@ -104,3 +107,236 @@ Some questions:
 2. Where there any errors identified during the import? If no, does this mean that there are no potential problems or issues with the imported data? **Let's take a look**
 3. How would you explain the values in the `eventDate` column when compared to the `year`, `month`, and `day` columns?
 4. What were the different ways in which missing data values were handled?
+
+## 2. Checking and handling data type errors
+
+Depending on the types of data that are encountered in each column of the imported dataset different R import functions will automatically "type" the column (or in R terminology set the "mode" of the column) based on some sample of rows from the source file. In the case of `readr`, the data reading package used by tidyverse, the first 1000 lines of data will be read to determine the data type that should be used for each column. The core R data types are:
+
+* character
+* numeric (real or decimal)
+* integer
+* logical
+* complex
+
+These core data types can then be used as the foundation for more complex data types such as *dates*, *times* and *datetimes*. 
+
+The core data structures that can be used to organize collections of these data types include:
+
+* vector - a sequence of data values of the same type
+* list - a sequence of data values of the same or different types, and structures
+* matrix - a vector for which *dimensions* 
+* data frame - a structured collection of vectors of the same length
+* factors - a vactor vector is a set of integer values that are associated with a collection of categorical character values
+
+Let's focus on the `catalogNumber` and `textLatDD` columns in our sample datasets. 
+
+```{r}
+spec(rawData)
+rawData %>%
+  select(catalogNumber,textLatDD)
+```
+
+
+```{r}
+# test the creation of a numLatDD column as a numeric column and see what rows were converted to NA
+rawData %>%
+  mutate(numLatDD = as.numeric(rawData$textLatDD)) %>%
+  filter(is.na(numLatDD)) %>%
+  select(textLatDD, numLatDD) %>%
+  print() %>%
+  group_by(textLatDD) %>%
+  summarize(count = n()) 
+
+```
+
+```{r}
+# create a numeric column based on the previously tested conversion of the textLatDD column
+rawData$numLatDD <- as.numeric(rawData$textLatDD)
+rawData
+```
+
+We can also accomplish a similar outcome by specifying the column type that should be created as part of the import process. 
+
+```{r}
+rawData2 <- read_csv("../data/learning.csv", 
+                     col_types = cols(
+                        textLatDD = col_double()
+                        ),
+                     progress = FALSE)
+
+# Display the column definitions for the imported dataset
+spec(rawData2)
+
+# Report the problems that were encountered when the data were imported.
+problems(rawData2)
+
+# Display the imported table
+rawData2
+```
+
+```{r}
+# convert the catalogNumberTxt column to a character column and see what the result is
+rawData %>%
+  mutate(catalogNumberTxt = as.character(catalogNumber)) %>%
+  filter(is.na(catalogNumberTxt))
+
+```
+
+## 3. Check and handle missing values
+
+It is important to understand the potential impact that missing data will have on your analysis. As we've already seen the import process may automatically produce missing data values in your analysis dataframe (or *tibble* in the context of tidyverse based processes). Some functions enable you to efficiently visualize the patterns of missing values in your dataset - allowing for the analysis of large datasets that otherwise would not be feasible to review manually. 
+
+```{r}
+paste("decimalLatitude: number of NA values", sum(is.na(rawData$decimalLatitude)), sep = " ")
+paste("decimalLongitude: number of NA values", sum(is.na(rawData$decimalLongitude)), sep = " ")
+paste("weight: number of NA values", sum(is.na(rawData$weight)), sep = " ")
+paste("length: number of NA values", sum(is.na(rawData$length)), sep = " ")
+paste("sex: number of NA values", sum(is.na(rawData$sex)), sep = " ")
+paste("latDMS: number of NA values", sum(is.na(rawData$latDMS)), sep = " ")
+paste("lonDMS: number of NA values", sum(is.na(rawData$lonDMS)), sep = " ")
+paste("textLatDD: number of NA values", sum(is.na(rawData$textLatDD)), sep = " ")
+paste("numLatDD: number of NA values", sum(is.na(rawData$numLatDD)), sep = " ")
+
+```
+
+In this analysis we will be using the `md.pattern` function that is part of the `mice`  and `VIM` packages. If you haven't already installed the `mice` package you can do so by executing the `install.packages("mice")` command.  
+
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 120)
+library(mice)
+library(VIM)
+
+rawData %>%
+  select(decimalLatitude, decimalLongitude, weight, length, sex, latDMS, lonDMS, textLatDD, numLatDD) %>%
+  md.pattern(rotate.names = TRUE)
+```
+
+Another method of viewing similar information
+
+```{r}
+rawData %>%
+  select(decimalLatitude, decimalLongitude, weight, length, sex, latDMS, lonDMS, textLatDD, numLatDD) %>%
+  rename(latDD = decimalLatitude, lonDD = decimalLongitude) %>%
+  aggr(numbers=TRUE)
+```
+
+
+## 4. Multi-value columns
+
+A core principle of having well structured data that is read for analysis is that:
+
+In the context of "Tidy" data that underlie the tools developed as part of the tidyverse package^[Hadley Wickham & Garrett Grolemund. 2017. *R for Data Science*. O’Reilly. - section on Tidy Data [https://r4ds.had.co.nz/tidy-data.html](https://r4ds.had.co.nz/tidy-data.html)
+
+> There are three interrelated rules which make a dataset tidy:
+>
+> 1. Each variable must have its own column.
+> 2. Each observation must have its own row.
+> 3. **Each value must have its own cell.**
+
+this issue also relates to the idea of *atomicity* in Codd's definition of *First Normal Form* when *normalizing* a relational database^[https://en.wikipedia.org/wiki/First_normal_form]. While we're not going to get into relational data modeling in R here, well structured data allow for the use of relational data models in you analysis independent of a separate database server. 
+
+In this example we are going to focus on three columns: `recordedBy`, `latDMS`, and `lonDMS`. 
+
+```{r}
+rawData %>%
+  select(recordedBy, latDMS, lonDMS)
+```
+
+Breaking apart the `recordedBy` column using the `str_match` function from the `stringr` package. This uses *regular expressions* for defining the text patterns that should be found and processed in the process of breaking the column apart into new columns. 
+
+```{r}
+collectorExtract <- "^collector\\(s\\):\\s(.*;|.*$)"
+preparatorExtract <- "preparator\\(s\\):\\s(.*;|.*$)"
+#str_match(rawData$recordedBy, collectorExtract)[,2]
+#str_match(rawData$recordedBy, preparatorExtract)[,2]
+rawData$collectors <- str_match(rawData$recordedBy, collectorExtract)[,2]
+rawData$preparators <- str_match(rawData$recordedBy, preparatorExtract)[,2]
+```
+
+*What would the next logical step in the process be for cleaning up the `recordedBy` column?*
+
+Breaking apart the `latDMS` and `lonDMS` columns into their constituent parts
+
+```{r}
+dmsExtract <- "\\s*(-*[:digit:]+)°\\s*([:digit:]+)\\'\\s*([:digit:]+)"
+
+latSubstrings <- str_match(rawData$latDMS, dmsExtract)
+rawData$latD <- as.numeric(latSubstrings[,2])
+rawData$latM <- as.numeric(latSubstrings[,3])
+rawData$latS <- as.numeric(latSubstrings[,4])
+
+glimpse(latSubstrings)
+
+lonSubstrings <- str_match(rawData$lonDMS, dmsExtract)
+rawData$lonD <- as.numeric(lonSubstrings[,2])
+rawData$lonM <- as.numeric(lonSubstrings[,3])
+rawData$lonS <- as.numeric(lonSubstrings[,4])
+
+glimpse(lonSubstrings)
+
+glimpse(rawData)
+```
+
+## 5. Check value ranges and explore data
+
+As part of the examiniation of these columns we will use the `assertr`. If you need to install the `assertr` package in your enviornment you can execute the `install.packages("assertr")` command. 
+
+Checking the `weight` and `length` columns. 
+
+```{r}
+#library(assertr)
+#
+#rawData %>%
+#  chain_start %>%
+#  assert(within_bounds(1,Inf), weight) %>%
+#  assert(within_bounds(1,Inf), length) %>%
+#  insist(within_n_sds(3), weight) %>%
+#  insist(within_n_sds(3), length) %>%
+#  chain_end
+
+```
+
+```{r}
+library(ggplot2)
+ggplot(rawData, aes(x=weight)) +
+  geom_histogram(binwidth = 5)
+ggplot(rawData, aes(x=length)) +
+  geom_histogram(binwidth = 5)
+  
+```
+
+
+## 6. Bringing it all together to produce our analysis dataset
+
+```{r}
+# import the data with explicit column definitions for the textLatDD and catalogNumber columns
+analysisData <- read_csv("../data/learning.csv", 
+                     col_types = cols(
+                        textLatDD = col_double(), 
+                        catalogNumber = col_character()
+                        ),
+                     progress = FALSE)
+
+# split up the recordedBy column
+collectorExtract <- "^collector\\(s\\):\\s(.*;|.*$)"
+preparatorExtract <- "preparator\\(s\\):\\s(.*;|.*$)"
+analysisData$collectors <- str_match(analysisData$recordedBy, collectorExtract)[,2]
+analysisData$preparators <- str_match(analysisData$recordedBy, preparatorExtract)[,2]
+
+# split up the latDMS and lonDMS columns
+dmsExtract <- "\\s*(-*[:digit:]+)°\\s*([:digit:]+)\\'\\s*([:digit:]+)"
+
+latSubstrings <- str_match(analysisData$latDMS, dmsExtract)
+analysisData$latD <- as.numeric(latSubstrings[,2])
+analysisData$latM <- as.numeric(latSubstrings[,3])
+analysisData$latS <- as.numeric(latSubstrings[,4])
+
+lonSubstrings <- str_match(analysisData$lonDMS, dmsExtract)
+analysisData$lonD <- as.numeric(lonSubstrings[,2])
+analysisData$lonM <- as.numeric(lonSubstrings[,3])
+analysisData$lonS <- as.numeric(lonSubstrings[,4])
+
+glimpse(analysisData)
+
+```
+
