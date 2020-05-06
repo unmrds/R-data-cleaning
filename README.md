@@ -30,7 +30,7 @@ Prior to the workshop you will need to perform the following steps:
 
 4. Test your installation of RStudio by opening it through the "Start Menu" in Windows, or the "Applications" folder on a Mac. If you installation was successful in linking R project files with RStudio you can also double-click the `R-data-cleaning.Rproj` file in the top folder of the uncompressed ZIP archive that you downloaded in step (1) above. If you have succeessfully installed and run RStudio you should see a window that looks like the following:
 
-![Default RStudio window](code/images/RStuioWindo.png)
+![Default RStudio window](code/images/RStudioWindo.png)
 
 5. Install the required R packages (if they are not already installed on your system - if they are already installed you will be told this when executing these commands) by executing the following commands in the R Console:
 
