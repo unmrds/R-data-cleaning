@@ -1,6 +1,8 @@
 ---
 title: "Cleaning Data"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -13,7 +15,9 @@ GitHub Repository with this demonstration: [https://github.com/unmrds/R-data-cle
 
 Zipfile Download: [https://github.com/unmrds/R-data-cleaning/archive/master.zip](https://github.com/unmrds/R-data-cleaning/archive/master.zip)
 
-When planning a data analysis the first, and often most time consuming, step is the acquire and process the data into a form that can be used in the analytic procedures you intend to use. Today we are going to focus on a sequence of steps that generally follow the workflow that you will find yourself going through when bringing data into R to perform analysis. 
+Check out the **Preflight Check** to see if you have the needed R libraries installed run the `package.check.R` script in the top directory of this R project. 
+
+When planning a data analysis the first step, and often most time consuming, is the acquisition and processing of the data into a form that can be used in the analytic procedures you intend to use. Today we are going to focus on a sequence of steps that generally follow the workflow that you will find yourself going through when bringing data into R to perform an analysis. 
 
 ![Portion of *R for Data Science*^[Hadley Wickham & Garrett Grolemund. 2017. *R for Data Science*. O’Reilly. [https://r4ds.had.co.nz](https://r4ds.had.co.nz) ] workflow](images/tidy_workflow.png)
 
@@ -32,7 +36,7 @@ When planning a data analysis the first, and often most time consuming, step is 
 
 ### Data for today's demonstration
 
-The data for this demonstration is based upon the [idigbio_rodents.csv](https://figshare.com/articles/idigbio_rodents_csv/5535724) dataset. The data are described as follows in the repository where they are shared:
+The data for this demonstration are based upon the [idigbio_rodents.csv](https://figshare.com/articles/idigbio_rodents_csv/5535724) dataset. The data are described as follows in the repository where they are shared:
 
 > The idigbio_rodents.csv dataset is just over 10k records and contains data from natural history collections specimen records representing 5 genera from 4 major US collections, limited to US records. All records are from the Order Rodentia. All the data are mapped to the biodiversity data standard Darwin Core (http://rs.tdwg.org/dwc/terms/).
 
@@ -82,12 +86,12 @@ rawDataStruct
 
 Let's take a look at the source data file and see if we can find the problem...
 
-Now let's try it with the full dataset
+Now let's try it with the full dataset for which the structural problem has been resolved. 
 
 ```{r}
 library(tidyverse)
 
-# Import the source CSV file that contains a structural flaw
+# Import the source CSV file that does not contain the structural problem highlighted above
 rawData <- read_csv("../data/learning.csv", 
                     progress = FALSE)
 
@@ -233,7 +237,7 @@ In the context of "Tidy" data that underlie the tools developed as part of the t
 > 2. Each observation must have its own row.
 > 3. **Each value must have its own cell.**
 
-this issue also relates to the idea of *atomicity* in Codd's definition of *First Normal Form* when *normalizing* a relational database^[https://en.wikipedia.org/wiki/First_normal_form]. While we're not going to get into relational data modeling in R here, well structured data allow for the use of relational data models in you analysis independent of a separate database server. 
+This issue also relates to the idea of *atomicity* in Codd's definition of *First Normal Form* when *normalizing* a relational database^[https://en.wikipedia.org/wiki/First_normal_form]. While we're not going to get into relational data modeling in R here, well structured data allow for the use of relational data models in your analysis independent of a separate database server. 
 
 In this example we are going to focus on three columns: `recordedBy`, `latDMS`, and `lonDMS`. 
 
@@ -242,7 +246,9 @@ rawData %>%
   select(recordedBy, latDMS, lonDMS)
 ```
 
-Breaking apart the `recordedBy` column using the `str_match` function from the `stringr` package. This uses *regular expressions* for defining the text patterns that should be found and processed in the process of breaking the column apart into new columns. 
+Breaking apart the `recordedBy` column using the `str_match` function from the `stringr` package. This uses *regular expressions* for defining the text patterns that should be found and processed in the process of breaking the column apart into new columns. Regular expressions are an art to themselves and there are many resources for learning their effective use - ranging from one-page cheat-sheets to full length books. The following figure describes the structure of the regular expressions used in the sample code:
+
+![Description of the regular expression used to extract targeted substrings from the combined "recordedBy" field](images/regex.png)
 
 ```{r}
 collectorExtract <- "^collector\\(s\\):\\s(.*;|.*$)"
@@ -338,5 +344,12 @@ analysisData$lonS <- as.numeric(lonSubstrings[,4])
 
 glimpse(analysisData)
 
+```
+
+Export the code from the workshop both as a documented and undocumented R script
+
+```{r}
+#library(knitr)
+#purl("cleaning_data.Rmd", "cleaning_data_nodocs.R", documentation = 0)
 ```
 

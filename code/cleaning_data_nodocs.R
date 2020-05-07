@@ -168,3 +168,6 @@ analysisData$lonS <- as.numeric(lonSubstrings[,4])
 
 glimpse(analysisData)
 
+
+#library(knitr)
+#purl("cleaning_data.Rmd", "cleaning_data_nodocs.R", documentation = 0)
