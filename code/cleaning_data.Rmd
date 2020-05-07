@@ -1,12 +1,14 @@
 ---
 title: "Cleaning Data"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+default_width <- 80
+options(width = default_width)
 ```
 
 ## Cleaning Data In R
@@ -51,23 +53,27 @@ An additional file was developed that only includes the first 10 rows of the fil
 
 ### R libraries used in the demonstration
 
-For this demonstration a set of R packages that are part of the [*Tidyverse*](https://www.tidyverse.org). The tidyverse collection of packages provide (as described on the project's homepage):
+For this demonstration a combination of R packages that are part of the [*Tidyverse*](https://www.tidyverse.org) and additional specialized data evaluation packages will be used. The tidyverse collection of packages provide (as described on the project's homepage):
 
 > an opinionated collection of R packages designed for data science. All packages share an underlying design philosophy, grammar, and data structures. 
 
+In addition to `tidyverse`, this workshop also uses the `mice`, `VIM`, and `assertr` packages. 
+
 There are currently over 14,000 R [packages](https://cran.r-project.org/web/packages/index.html) in the [Comprehensive R Archive Network (CRAN)](https://cran.r-project.org/index.html). While the tidyverse packages provide a useful degree of consistency and internal interoperablity it is strongly encouraged to examine the broad collection of R packages when working on a particular analysis problem. 
 
-If you need to install the tidyverse packages in your enviornment you can execute the `install.packages("tidyverse")` command. 
+If you need to install any of the needed packages in your enviornment you can execute the `install.packages("<package name>")` command in the R console. 
 
 ## 1. Identify and correct structural issues in the source data that prevent clean import into R data structures
 
-R can import a wide variety of *rectangular* data structures: comma-delimited, tab-delimited, excel spreadsheets, fixed-width among the many options. If there are errors in the structure of these files, R import commands may not be able to parse the lines in the data file preventing import. In these cases the returned error messages may provide some clues to where the errors may be found.  
+R can import a wide variety of *rectangular* data structures: comma-delimited, tab-delimited, excel spreadsheets, fixed-width among the many options. If there are errors in the structure of these files, R import commands may not be able to parse the lines in the data file preventing import. In these cases the returned error messages *may* provide some clues to where the errors may be found.  
 
 **One strategy for identifying potential strucutral issues in the source file is to try to import the dataset and review any errors that are returned**
 
 Let's try it first with a small file ...
 
 ```{r}
+########## Working with a CSV file with structural problems ###################
+
 library(tidyverse)
 
 # Import the source CSV file that contains a structural flaw
@@ -84,11 +90,21 @@ problems(rawDataStruct)
 rawDataStruct
 ```
 
+The output of the `read_csv` command and of the `problems` function indicate that there was a problem of some sort around row 7 during the import of the CSV:
+
+  1 parsing failure.
+  row col   expected     actual                          file
+  7  -- 24 columns 26 columns '../data/learning_struct.csv'
+
 Let's take a look at the source data file and see if we can find the problem...
 
-Now let's try it with the full dataset for which the structural problem has been resolved. 
+### After the structural problem has been resolved load the full dataset for use in the rest of the workshop
+
+
 
 ```{r}
+########## Load the full CSV file without the structural error ################
+
 library(tidyverse)
 
 # Import the source CSV file that does not contain the structural problem highlighted above
@@ -129,12 +145,15 @@ The core data structures that can be used to organize collections of these data 
 * vector - a sequence of data values of the same type
 * list - a sequence of data values of the same or different types, and structures
 * matrix - a vector for which *dimensions* 
-* data frame - a structured collection of vectors of the same length
+* data frame (and the "tibble" in the tidyverse) - a structured collection of vectors of the same length
 * factors - a vactor vector is a set of integer values that are associated with a collection of categorical character values
 
 Let's focus on the `catalogNumber` and `textLatDD` columns in our sample datasets. 
 
 ```{r}
+########## Handling data type errors on import ################################
+
+## Take a look at the types and content of a couple of columns
 spec(rawData)
 rawData %>%
   select(catalogNumber,textLatDD)
@@ -142,7 +161,8 @@ rawData %>%
 
 
 ```{r}
-# test the creation of a numLatDD column as a numeric column and see what rows were converted to NA
+## Test the creation of a numLatDD column as a numeric column and
+## see what rows were converted to NA
 rawData %>%
   mutate(numLatDD = as.numeric(rawData$textLatDD)) %>%
   filter(is.na(numLatDD)) %>%
@@ -154,7 +174,8 @@ rawData %>%
 ```
 
 ```{r}
-# create a numeric column based on the previously tested conversion of the textLatDD column
+## create a numeric column based on the previously tested conversion of 
+## the textLatDD column
 rawData$numLatDD <- as.numeric(rawData$textLatDD)
 rawData
 ```
@@ -162,6 +183,7 @@ rawData
 We can also accomplish a similar outcome by specifying the column type that should be created as part of the import process. 
 
 ```{r}
+## Specify the column data type when importing 
 rawData2 <- read_csv("../data/learning.csv", 
                      col_types = cols(
                         textLatDD = col_double()
@@ -179,7 +201,8 @@ rawData2
 ```
 
 ```{r}
-# convert the catalogNumberTxt column to a character column and see what the result is
+## Convert the catalogNumberTxt column to a character column and see what 
+## the result is
 rawData %>%
   mutate(catalogNumberTxt = as.character(catalogNumber)) %>%
   filter(is.na(catalogNumberTxt))
@@ -191,35 +214,81 @@ rawData %>%
 It is important to understand the potential impact that missing data will have on your analysis. As we've already seen the import process may automatically produce missing data values in your analysis dataframe (or *tibble* in the context of tidyverse based processes). Some functions enable you to efficiently visualize the patterns of missing values in your dataset - allowing for the analysis of large datasets that otherwise would not be feasible to review manually. 
 
 ```{r}
-paste("decimalLatitude: number of NA values", sum(is.na(rawData$decimalLatitude)), sep = " ")
-paste("decimalLongitude: number of NA values", sum(is.na(rawData$decimalLongitude)), sep = " ")
-paste("weight: number of NA values", sum(is.na(rawData$weight)), sep = " ")
-paste("length: number of NA values", sum(is.na(rawData$length)), sep = " ")
-paste("sex: number of NA values", sum(is.na(rawData$sex)), sep = " ")
-paste("latDMS: number of NA values", sum(is.na(rawData$latDMS)), sep = " ")
-paste("lonDMS: number of NA values", sum(is.na(rawData$lonDMS)), sep = " ")
-paste("textLatDD: number of NA values", sum(is.na(rawData$textLatDD)), sep = " ")
-paste("numLatDD: number of NA values", sum(is.na(rawData$numLatDD)), sep = " ")
+########## Check and handle missing values ####################################
+
+## Manually by printing out sum (FALSE = 0, TRUE = 1) of is.na test results
+paste("decimalLatitude: number of NA values", 
+      sum(is.na(rawData$decimalLatitude)), 
+      sep = " ")
+paste("decimalLongitude: number of NA values", 
+      sum(is.na(rawData$decimalLongitude)), 
+      sep = " ")
+paste("weight: number of NA values", 
+      sum(is.na(rawData$weight)), 
+      sep = " ")
+paste("length: number of NA values", 
+      sum(is.na(rawData$length)), 
+      sep = " ")
+paste("sex: number of NA values", 
+      sum(is.na(rawData$sex)), 
+      sep = " ")
+paste("latDMS: number of NA values", 
+      sum(is.na(rawData$latDMS)), 
+      sep = " ")
+paste("lonDMS: number of NA values", 
+      sum(is.na(rawData$lonDMS)), 
+      sep = " ")
+paste("textLatDD: number of NA values", 
+      sum(is.na(rawData$textLatDD)), 
+      sep = " ")
+paste("numLatDD: number of NA values", 
+      sum(is.na(rawData$numLatDD)), 
+      sep = " ")
 
 ```
 
-In this analysis we will be using the `md.pattern` function that is part of the `mice`  and `VIM` packages. If you haven't already installed the `mice` package you can do so by executing the `install.packages("mice")` command.  
+In this analysis we will be using the `md.pattern` function that is part of the `mice` package, and the `aggr` function which is part of the `VIM` package. If you haven't already installed the `mice` and `VIM` packages you can do so by executing the `install.packages("mice")` and `install.packages("VIM")` commands.  
 
 ```{r set-options, echo=FALSE, cache=FALSE}
-options(width = 120)
+## View the combinations of NA values across multiple columns with the 
+## md.pattern function from the mice package
+
 library(mice)
-library(VIM)
+options(width = 120)  # set the display width so the text doesn't wrap
+par(cex=0.75)   #reduce the default font size so the numbers don't overlap
 
 rawData %>%
-  select(decimalLatitude, decimalLongitude, weight, length, sex, latDMS, lonDMS, textLatDD, numLatDD) %>%
+  select(decimalLatitude, 
+         decimalLongitude, 
+         weight, 
+         length, 
+         sex, 
+         latDMS, 
+         lonDMS, 
+         textLatDD, 
+         numLatDD) %>%
   md.pattern(rotate.names = TRUE)
+
+options(width = default_width)
 ```
 
 Another method of viewing similar information
 
 ```{r}
+## View the combinations of NA values across multiple columns with the 
+## aggr function from the VIM package
+library(VIM)
+
 rawData %>%
-  select(decimalLatitude, decimalLongitude, weight, length, sex, latDMS, lonDMS, textLatDD, numLatDD) %>%
+  select(decimalLatitude, 
+         decimalLongitude, 
+         weight, 
+         length, 
+         sex, 
+         latDMS, 
+         lonDMS, 
+         textLatDD, 
+         numLatDD) %>%
   rename(latDD = decimalLatitude, lonDD = decimalLongitude) %>%
   aggr(numbers=TRUE)
 ```
@@ -242,45 +311,71 @@ This issue also relates to the idea of *atomicity* in Codd's definition of *Firs
 In this example we are going to focus on three columns: `recordedBy`, `latDMS`, and `lonDMS`. 
 
 ```{r}
+########## Handling multi-value columns #######################################
+
+## Take a look at the recordedBy, latDMS, and lonDMS columns
 rawData %>%
   select(recordedBy, latDMS, lonDMS)
 ```
 
-Breaking apart the `recordedBy` column using the `str_match` function from the `stringr` package. This uses *regular expressions* for defining the text patterns that should be found and processed in the process of breaking the column apart into new columns. Regular expressions are an art to themselves and there are many resources for learning their effective use - ranging from one-page cheat-sheets to full length books. The following figure describes the structure of the regular expressions used in the sample code:
+Breaking apart the `recordedBy` column using the `str_match` function from the `stringr` package. This uses *regular expressions* for defining the text patterns that should be found and processed in the process of breaking the column apart into new columns. Regular expressions are an art to themselves and there are many resources for learning their effective use - ranging from one-page cheat-sheets to full length books. Some great resources include:
+
+* Jeffrey E.F. Friedl (2006) *Mastering Regular Expressions*. 3rd Ed. O'Reilly. [http://shop.oreilly.com/product/9780596528126.do](http://shop.oreilly.com/product/9780596528126.do) and for UNM affiliates through our Safari Online Learning subscription: [https://learning.oreilly.com/library/view/mastering-regular-expressions/0596528124/](https://learning.oreilly.com/library/view/mastering-regular-expressions/0596528124/) - this is a comprehensive, in-depth treatment of regular expressions from the most simple to most complex - including disucssions of implementations of regular expression support in different programming languages. 
+* Steven Levithan, Jan Goyvaerts (2012). *Regular Expressions Cookbook*. 2nd Ed. O'Reilly. [http://shop.oreilly.com/product/0636920023630.do](http://shop.oreilly.com/product/0636920023630.do) and for UNM affiliates [https://learning.oreilly.com/library/view/regular-expressions-cookbook/9781449327453/](https://learning.oreilly.com/library/view/regular-expressions-cookbook/9781449327453/) - a good set of regular expression common problems, and their solutions in multiple language implementations. 
+* Ian Kopacka (2016). *Basic Regular Expressions in R - Cheat Sheet*. Online resource: [https://rstudio.com/wp-content/uploads/2016/09/RegExCheatsheet.pdf](https://rstudio.com/wp-content/uploads/2016/09/RegExCheatsheet.pdf)
+
+
+The following figure describes the structure of the regular expressions used in the sample code:
 
 ![Description of the regular expression used to extract targeted substrings from the combined "recordedBy" field](images/regex.png)
 
+
 ```{r}
+## Define and use some R regular expressions for extracting text from the 
+## recordedBy column
 collectorExtract <- "^collector\\(s\\):\\s(.*;|.*$)"
 preparatorExtract <- "preparator\\(s\\):\\s(.*;|.*$)"
-#str_match(rawData$recordedBy, collectorExtract)[,2]
-#str_match(rawData$recordedBy, preparatorExtract)[,2]
-rawData$collectors <- str_match(rawData$recordedBy, collectorExtract)[,2]
-rawData$preparators <- str_match(rawData$recordedBy, preparatorExtract)[,2]
+
+collector_string <- str_match(rawData$recordedBy, collectorExtract)
+preparator_string <- str_match(rawData$recordedBy, preparatorExtract)
+
+print(head(collector_string))
+print(head(preparator_string))
+
+rawData$collectors <- collector_string[,2]
+rawData$preparators <- preparator_string[,2]
+
+# check the first ten rows to see what the output looks like
+head(rawData, n=10) %>%
+  select(recordedBy, collectors, preparators)
 ```
 
-*What would the next logical step in the process be for cleaning up the `recordedBy` column?*
+*What would the next logical step in the process be for cleaning up the `recordedBy` or newly generated columns?*
 
 Breaking apart the `latDMS` and `lonDMS` columns into their constituent parts
 
 ```{r}
-dmsExtract <- "\\s*(-*[:digit:]+)°\\s*([:digit:]+)\\'\\s*([:digit:]+)"
+## Define a regular expression and use it to extract pieces from a DMS string
+dmsExtract <- "\\s*(-*[:digit:]+)°\\s*([:digit:]+)\\'\\s*([:digit:]+\\.*[:digit:]*)"
 
 latSubstrings <- str_match(rawData$latDMS, dmsExtract)
+print(head(latSubstrings))
+
 rawData$latD <- as.numeric(latSubstrings[,2])
 rawData$latM <- as.numeric(latSubstrings[,3])
 rawData$latS <- as.numeric(latSubstrings[,4])
 
-glimpse(latSubstrings)
-
 lonSubstrings <- str_match(rawData$lonDMS, dmsExtract)
+print(head(lonSubstrings))
+
 rawData$lonD <- as.numeric(lonSubstrings[,2])
 rawData$lonM <- as.numeric(lonSubstrings[,3])
 rawData$lonS <- as.numeric(lonSubstrings[,4])
 
-glimpse(lonSubstrings)
 
-glimpse(rawData)
+head(rawData, n=10) %>% 
+  select(latDMS, latD, latM, latS,
+         lonDMS, lonD, lonM, lonS)
 ```
 
 ## 5. Check value ranges and explore data
@@ -290,20 +385,46 @@ As part of the examiniation of these columns we will use the `assertr`. If you n
 Checking the `weight` and `length` columns. 
 
 ```{r}
-#library(assertr)
-#
-#rawData %>%
-#  chain_start %>%
-#  assert(within_bounds(1,Inf), weight) %>%
-#  assert(within_bounds(1,Inf), length) %>%
-#  insist(within_n_sds(3), weight) %>%
-#  insist(within_n_sds(3), length) %>%
-#  chain_end
+########## Check value ranges and explore data ################################
 
+## assert GitHub repository with instructions and examples: 
+##      https://github.com/ropensci/assertr
+library(assertr)
+
+## you can just run this if you want execution of your workflow to stop if 
+## any of your tests fail
+
+# rawData %>% 
+#   chain_start %>%
+#   assert(within_bounds(1,Inf), weight) %>% # assert checks individual values
+#   assert(within_bounds(1,Inf), length) %>%
+#   insist(within_n_sds(3), weight) %>% # insist checks against calculated vals
+#   insist(within_n_sds(3), length) %>%
+#   chain_end
+
+## you can run this if you want to prevent the errors that are generated
+## by your tests from halting execution of your workflow
+tryCatch({rawData %>%
+  chain_start %>%
+  assert(within_bounds(1,Inf), weight) %>% # assert checks individual values
+  assert(within_bounds(1,Inf), length) %>%
+  insist(within_n_sds(3), weight) %>% # insist checks against calculated vals
+  insist(within_n_sds(3), length) %>%
+  chain_end
+}, warning = function(w) {
+    paste("A warning was generated: ", w, sep = "")
+}, error = function(e) {
+    print(e)
+}, finally = {
+    print("this is the end of the validation check ...")
+  }
+)
 ```
 
 ```{r}
+## Visual assessment of your data 
 library(ggplot2)
+
 ggplot(rawData, aes(x=weight)) +
   geom_histogram(binwidth = 5)
 ggplot(rawData, aes(x=length)) +
@@ -315,6 +436,9 @@ ggplot(rawData, aes(x=length)) +
 ## 6. Bringing it all together to produce our analysis dataset
 
 ```{r}
+###############################################################################
+########## Bringing it all together into a single series of commands ##########
+
 # import the data with explicit column definitions for the textLatDD and catalogNumber columns
 analysisData <- read_csv("../data/learning.csv", 
                      col_types = cols(
@@ -326,21 +450,27 @@ analysisData <- read_csv("../data/learning.csv",
 # split up the recordedBy column
 collectorExtract <- "^collector\\(s\\):\\s(.*;|.*$)"
 preparatorExtract <- "preparator\\(s\\):\\s(.*;|.*$)"
-analysisData$collectors <- str_match(analysisData$recordedBy, collectorExtract)[,2]
-analysisData$preparators <- str_match(analysisData$recordedBy, preparatorExtract)[,2]
+
+collector_string <- str_match(rawData$recordedBy, collectorExtract)
+preparator_string <- str_match(rawData$recordedBy, preparatorExtract)
+
+rawData$collectors <- collector_string[,2]
+rawData$preparators <- preparator_string[,2]
 
 # split up the latDMS and lonDMS columns
-dmsExtract <- "\\s*(-*[:digit:]+)°\\s*([:digit:]+)\\'\\s*([:digit:]+)"
+dmsExtract <- "\\s*(-*[:digit:]+)°\\s*([:digit:]+)\\'\\s*([:digit:]+\\.*[:digit:]*)"
 
-latSubstrings <- str_match(analysisData$latDMS, dmsExtract)
-analysisData$latD <- as.numeric(latSubstrings[,2])
-analysisData$latM <- as.numeric(latSubstrings[,3])
-analysisData$latS <- as.numeric(latSubstrings[,4])
+latSubstrings <- str_match(rawData$latDMS, dmsExtract)
 
-lonSubstrings <- str_match(analysisData$lonDMS, dmsExtract)
-analysisData$lonD <- as.numeric(lonSubstrings[,2])
-analysisData$lonM <- as.numeric(lonSubstrings[,3])
-analysisData$lonS <- as.numeric(lonSubstrings[,4])
+rawData$latD <- as.numeric(latSubstrings[,2])
+rawData$latM <- as.numeric(latSubstrings[,3])
+rawData$latS <- as.numeric(latSubstrings[,4])
+
+lonSubstrings <- str_match(rawData$lonDMS, dmsExtract)
+
+rawData$lonD <- as.numeric(lonSubstrings[,2])
+rawData$lonM <- as.numeric(lonSubstrings[,3])
+rawData$lonS <- as.numeric(lonSubstrings[,4])
 
 glimpse(analysisData)
 
@@ -350,6 +480,6 @@ Export the code from the workshop both as a documented and undocumented R script
 
 ```{r}
 #library(knitr)
-#purl("cleaning_data.Rmd", "cleaning_data_nodocs.R", documentation = 0)
+#purl("code/cleaning_data.Rmd", "code/cleaning_data_nodocs.R", documentation = 0)
 ```
 

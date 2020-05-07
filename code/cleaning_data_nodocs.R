@@ -1,4 +1,8 @@
 knitr::opts_chunk$set(echo = TRUE)
+default_width <- 80
+options(width = default_width)
+
+########## Working with a CSV file with structural problems ###################
 
 library(tidyverse)
 
@@ -15,6 +19,8 @@ problems(rawDataStruct)
 # Display the imported table
 rawDataStruct
 
+########## Load the full CSV file without the structural error ################
+
 library(tidyverse)
 
 # Import the source CSV file that does not contain the structural problem highlighted above
@@ -30,11 +36,15 @@ problems(rawData)
 # Display the imported table
 rawData
 
+########## Handling data type errors on import ################################
+
+## Take a look at the types and content of a couple of columns
 spec(rawData)
 rawData %>%
   select(catalogNumber,textLatDD)
 
-# test the creation of a numLatDD column as a numeric column and see what rows were converted to NA
+## Test the creation of a numLatDD column as a numeric column and
+## see what rows were converted to NA
 rawData %>%
   mutate(numLatDD = as.numeric(rawData$textLatDD)) %>%
   filter(is.na(numLatDD)) %>%
@@ -44,10 +54,12 @@ rawData %>%
   summarize(count = n()) 
 
 
-# create a numeric column based on the previously tested conversion of the textLatDD column
+## create a numeric column based on the previously tested conversion of 
+## the textLatDD column
 rawData$numLatDD <- as.numeric(rawData$textLatDD)
 rawData
 
+## Specify the column data type when importing 
 rawData2 <- read_csv("../data/learning.csv", 
                      col_types = cols(
                         textLatDD = col_double()
@@ -63,81 +75,175 @@ problems(rawData2)
 # Display the imported table
 rawData2
 
-# convert the catalogNumberTxt column to a character column and see what the result is
+## Convert the catalogNumberTxt column to a character column and see what 
+## the result is
 rawData %>%
   mutate(catalogNumberTxt = as.character(catalogNumber)) %>%
   filter(is.na(catalogNumberTxt))
 
 
-paste("decimalLatitude: number of NA values", sum(is.na(rawData$decimalLatitude)), sep = " ")
-paste("decimalLongitude: number of NA values", sum(is.na(rawData$decimalLongitude)), sep = " ")
-paste("weight: number of NA values", sum(is.na(rawData$weight)), sep = " ")
-paste("length: number of NA values", sum(is.na(rawData$length)), sep = " ")
-paste("sex: number of NA values", sum(is.na(rawData$sex)), sep = " ")
-paste("latDMS: number of NA values", sum(is.na(rawData$latDMS)), sep = " ")
-paste("lonDMS: number of NA values", sum(is.na(rawData$lonDMS)), sep = " ")
-paste("textLatDD: number of NA values", sum(is.na(rawData$textLatDD)), sep = " ")
-paste("numLatDD: number of NA values", sum(is.na(rawData$numLatDD)), sep = " ")
+########## Check and handle missing values ####################################
+
+## Manually by printing out sum (FALSE = 0, TRUE = 1) of is.na test results
+paste("decimalLatitude: number of NA values", 
+      sum(is.na(rawData$decimalLatitude)), 
+      sep = " ")
+paste("decimalLongitude: number of NA values", 
+      sum(is.na(rawData$decimalLongitude)), 
+      sep = " ")
+paste("weight: number of NA values", 
+      sum(is.na(rawData$weight)), 
+      sep = " ")
+paste("length: number of NA values", 
+      sum(is.na(rawData$length)), 
+      sep = " ")
+paste("sex: number of NA values", 
+      sum(is.na(rawData$sex)), 
+      sep = " ")
+paste("latDMS: number of NA values", 
+      sum(is.na(rawData$latDMS)), 
+      sep = " ")
+paste("lonDMS: number of NA values", 
+      sum(is.na(rawData$lonDMS)), 
+      sep = " ")
+paste("textLatDD: number of NA values", 
+      sum(is.na(rawData$textLatDD)), 
+      sep = " ")
+paste("numLatDD: number of NA values", 
+      sum(is.na(rawData$numLatDD)), 
+      sep = " ")
 
 
-options(width = 120)
+## View the combinations of NA values across multiple columns with the 
+## md.pattern function from the mice package
+
 library(mice)
+options(width = 120)  # set the display width so the text doesn't wrap
+par(cex=0.75)   #reduce the default font size so the numbers don't overlap
+
+rawData %>%
+  select(decimalLatitude, 
+         decimalLongitude, 
+         weight, 
+         length, 
+         sex, 
+         latDMS, 
+         lonDMS, 
+         textLatDD, 
+         numLatDD) %>%
+  md.pattern(rotate.names = TRUE)
+
+options(width = default_width)
+
+## View the combinations of NA values across multiple columns with the 
+## aggr function from the VIM package
 library(VIM)
 
 rawData %>%
-  select(decimalLatitude, decimalLongitude, weight, length, sex, latDMS, lonDMS, textLatDD, numLatDD) %>%
-  md.pattern(rotate.names = TRUE)
-
-rawData %>%
-  select(decimalLatitude, decimalLongitude, weight, length, sex, latDMS, lonDMS, textLatDD, numLatDD) %>%
+  select(decimalLatitude, 
+         decimalLongitude, 
+         weight, 
+         length, 
+         sex, 
+         latDMS, 
+         lonDMS, 
+         textLatDD, 
+         numLatDD) %>%
   rename(latDD = decimalLatitude, lonDD = decimalLongitude) %>%
   aggr(numbers=TRUE)
 
+########## Handling multi-value columns #######################################
+
+## Take a look at the recordedBy, latDMS, and lonDMS columns
 rawData %>%
   select(recordedBy, latDMS, lonDMS)
 
+## Define and use some R regular expressions for extracting text from the 
+## recordedBy column
 collectorExtract <- "^collector\\(s\\):\\s(.*;|.*$)"
 preparatorExtract <- "preparator\\(s\\):\\s(.*;|.*$)"
-#str_match(rawData$recordedBy, collectorExtract)[,2]
-#str_match(rawData$recordedBy, preparatorExtract)[,2]
-rawData$collectors <- str_match(rawData$recordedBy, collectorExtract)[,2]
-rawData$preparators <- str_match(rawData$recordedBy, preparatorExtract)[,2]
 
-dmsExtract <- "\\s*(-*[:digit:]+)°\\s*([:digit:]+)\\'\\s*([:digit:]+)"
+collector_string <- str_match(rawData$recordedBy, collectorExtract)
+preparator_string <- str_match(rawData$recordedBy, preparatorExtract)
+
+print(head(collector_string))
+print(head(preparator_string))
+
+rawData$collectors <- collector_string[,2]
+rawData$preparators <- preparator_string[,2]
+
+# check the first ten rows to see what the output looks like
+head(rawData, n=10) %>%
+  select(recordedBy, collectors, preparators)
+
+## Define a regular expression and use it to extract pieces from a DMS string
+dmsExtract <- "\\s*(-*[:digit:]+)°\\s*([:digit:]+)\\'\\s*([:digit:]+\\.*[:digit:]*)"
 
 latSubstrings <- str_match(rawData$latDMS, dmsExtract)
+print(head(latSubstrings))
+
 rawData$latD <- as.numeric(latSubstrings[,2])
 rawData$latM <- as.numeric(latSubstrings[,3])
 rawData$latS <- as.numeric(latSubstrings[,4])
 
-glimpse(latSubstrings)
-
 lonSubstrings <- str_match(rawData$lonDMS, dmsExtract)
+print(head(lonSubstrings))
+
 rawData$lonD <- as.numeric(lonSubstrings[,2])
 rawData$lonM <- as.numeric(lonSubstrings[,3])
 rawData$lonS <- as.numeric(lonSubstrings[,4])
 
-glimpse(lonSubstrings)
 
-glimpse(rawData)
+head(rawData, n=10) %>% 
+  select(latDMS, latD, latM, latS,
+         lonDMS, lonD, lonM, lonS)
 
-#library(assertr)
-#
-#rawData %>%
-#  chain_start %>%
-#  assert(within_bounds(1,Inf), weight) %>%
-#  assert(within_bounds(1,Inf), length) %>%
-#  insist(within_n_sds(3), weight) %>%
-#  insist(within_n_sds(3), length) %>%
-#  chain_end
+########## Check value ranges and explore data ################################
 
+## assert GitHub repository with instructions and examples: 
+##      https://github.com/ropensci/assertr
+library(assertr)
 
+## you can just run this if you want execution of your workflow to stop if 
+## any of your tests fail
+
+# rawData %>% 
+#   chain_start %>%
+#   assert(within_bounds(1,Inf), weight) %>% # assert checks individual values
+#   assert(within_bounds(1,Inf), length) %>%
+#   insist(within_n_sds(3), weight) %>% # insist checks against calculated vals
+#   insist(within_n_sds(3), length) %>%
+#   chain_end
+
+## you can run this if you want to prevent the errors that are generated
+## by your tests from halting execution of your workflow
+tryCatch({rawData %>%
+  chain_start %>%
+  assert(within_bounds(1,Inf), weight) %>% # assert checks individual values
+  assert(within_bounds(1,Inf), length) %>%
+  insist(within_n_sds(3), weight) %>% # insist checks against calculated vals
+  insist(within_n_sds(3), length) %>%
+  chain_end
+}, warning = function(w) {
+    paste("A warning was generated: ", w, sep = "")
+}, error = function(e) {
+    print(e)
+}, finally = {
+    print("this is the end of the validation check ...")
+  }
+)
+
+## Visual assessment of your data 
 library(ggplot2)
+
 ggplot(rawData, aes(x=weight)) +
   geom_histogram(binwidth = 5)
 ggplot(rawData, aes(x=length)) +
   geom_histogram(binwidth = 5)
   
+
+###############################################################################
+########## Bringing it all together into a single series of commands ##########
 
 # import the data with explicit column definitions for the textLatDD and catalogNumber columns
 analysisData <- read_csv("../data/learning.csv", 
@@ -150,21 +256,27 @@ analysisData <- read_csv("../data/learning.csv",
 # split up the recordedBy column
 collectorExtract <- "^collector\\(s\\):\\s(.*;|.*$)"
 preparatorExtract <- "preparator\\(s\\):\\s(.*;|.*$)"
-analysisData$collectors <- str_match(analysisData$recordedBy, collectorExtract)[,2]
-analysisData$preparators <- str_match(analysisData$recordedBy, preparatorExtract)[,2]
+
+collector_string <- str_match(rawData$recordedBy, collectorExtract)
+preparator_string <- str_match(rawData$recordedBy, preparatorExtract)
+
+rawData$collectors <- collector_string[,2]
+rawData$preparators <- preparator_string[,2]
 
 # split up the latDMS and lonDMS columns
-dmsExtract <- "\\s*(-*[:digit:]+)°\\s*([:digit:]+)\\'\\s*([:digit:]+)"
+dmsExtract <- "\\s*(-*[:digit:]+)°\\s*([:digit:]+)\\'\\s*([:digit:]+\\.*[:digit:]*)"
 
-latSubstrings <- str_match(analysisData$latDMS, dmsExtract)
-analysisData$latD <- as.numeric(latSubstrings[,2])
-analysisData$latM <- as.numeric(latSubstrings[,3])
-analysisData$latS <- as.numeric(latSubstrings[,4])
+latSubstrings <- str_match(rawData$latDMS, dmsExtract)
 
-lonSubstrings <- str_match(analysisData$lonDMS, dmsExtract)
-analysisData$lonD <- as.numeric(lonSubstrings[,2])
-analysisData$lonM <- as.numeric(lonSubstrings[,3])
-analysisData$lonS <- as.numeric(lonSubstrings[,4])
+rawData$latD <- as.numeric(latSubstrings[,2])
+rawData$latM <- as.numeric(latSubstrings[,3])
+rawData$latS <- as.numeric(latSubstrings[,4])
+
+lonSubstrings <- str_match(rawData$lonDMS, dmsExtract)
+
+rawData$lonD <- as.numeric(lonSubstrings[,2])
+rawData$lonM <- as.numeric(lonSubstrings[,3])
+rawData$lonS <- as.numeric(lonSubstrings[,4])
 
 glimpse(analysisData)
 
