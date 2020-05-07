@@ -15,7 +15,7 @@ GitHub Repository with this demonstration: [https://github.com/unmrds/R-data-cle
 
 Zipfile Download: [https://github.com/unmrds/R-data-cleaning/archive/master.zip](https://github.com/unmrds/R-data-cleaning/archive/master.zip)
 
-Check out the **Preflight Check** to see if you have the needed R libraries installed run the `package.check.R` script in the top directory of this R project. 
+Check out the **Preflight Check** to see if you have the needed R libraries installed run the `package.check.R` script in the top directory of this R project. This script will check to see if the packages are installed, and if they are not will do so. The script finishes with a listing of the currently installed packages so you can verify that the packages we need are installed. Check out the [README.md](https://github.com/unmrds/R-data-cleaning/blob/master/README.md) file in the [workshop repository](https://github.com/unmrds/R-data-cleaning) for full setup instructions. 
 
 When planning a data analysis the first step, and often most time consuming, is the acquisition and processing of the data into a form that can be used in the analytic procedures you intend to use. Today we are going to focus on a sequence of steps that generally follow the workflow that you will find yourself going through when bringing data into R to perform an analysis. 
 
