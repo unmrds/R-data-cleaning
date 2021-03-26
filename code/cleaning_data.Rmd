@@ -144,9 +144,9 @@ The core data structures that can be used to organize collections of these data 
 
 * vector - a sequence of data values of the same type
 * list - a sequence of data values of the same or different types, and structures
-* matrix - a vector for which *dimensions* 
+* matrix - a vector for which one or more *dimensions* are defined
 * data frame (and the "tibble" in the tidyverse) - a structured collection of vectors of the same length
-* factors - a vactor vector is a set of integer values that are associated with a collection of categorical character values
+* factors - a factor vector is a set of integer values that are associated with a collection of categorical character values
 
 Let's focus on the `catalogNumber` and `textLatDD` columns in our sample datasets. 
 
