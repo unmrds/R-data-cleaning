@@ -7,6 +7,7 @@ options(width = default_width)
 library(tidyverse)
 
 # Import the source CSV file that contains a structural flaw
+# ? what does that path string in the read_csf function mean?
 rawDataStruct <- read_csv("../data/learning_struct.csv", 
                     progress = FALSE)
 
@@ -33,31 +34,33 @@ spec(rawData)
 # Report the problems that were encountered when the data were imported.
 problems(rawData)
 
-# Display the imported table
-rawData
+# Display the first few rows of the imported table
+head(rawData, n=20)
+
 
 ########## Handling data type errors on import ################################
 
 ## Take a look at the types and content of a couple of columns
 spec(rawData)
 rawData %>%
-  select(catalogNumber,textLatDD)
+  select(catalogNumber,textLatDD) %>%       # let's just look at the "catalogNumber" and "textlatDD" columns
+  slice_head(n=20)                          # let's just look at the first 20 rows
 
 ## Test the creation of a numLatDD column as a numeric column and
 ## see what rows were converted to NA
 rawData %>%
-  mutate(numLatDD = as.numeric(rawData$textLatDD)) %>%
-  filter(is.na(numLatDD)) %>%
-  select(textLatDD, numLatDD) %>%
-  print() %>%
-  group_by(textLatDD) %>%
-  summarize(count = n()) 
+  mutate(numLatDD = as.numeric(rawData$textLatDD)) %>%      # convert all of the values to numbers if possible
+  filter(is.na(numLatDD)) %>%                               # select all of the rows in the new numLat column has a NA value
+  select(textLatDD, numLatDD) %>%                           # include only the "textLatDD" and "numLatDD" columns
+  print() %>%                                               # print the resulting rows and columns
+  group_by(textLatDD) %>%                                   # aggregate rows by the content of the "textLatDD" column
+  summarize(count = n())                                    # count up the number of values in each group 
 
 
 ## create a numeric column based on the previously tested conversion of 
 ## the textLatDD column
 rawData$numLatDD <- as.numeric(rawData$textLatDD)
-rawData
+head(rawData, n = 20)
 
 ## Specify the column data type when importing 
 rawData2 <- read_csv("../data/learning.csv", 
@@ -73,7 +76,7 @@ spec(rawData2)
 problems(rawData2)
 
 # Display the imported table
-rawData2
+head(rawData2, n = 20)
 
 ## Convert the catalogNumberTxt column to a character column and see what 
 ## the result is
@@ -85,6 +88,7 @@ rawData %>%
 ########## Check and handle missing values ####################################
 
 ## Manually by printing out sum (FALSE = 0, TRUE = 1) of is.na test results
+# remember that the paste() function just lets you concatenate pieces of text (or values that can be coerced into text) into a single text string
 paste("decimalLatitude: number of NA values", 
       sum(is.na(rawData$decimalLatitude)), 
       sep = " ")
@@ -218,10 +222,11 @@ library(assertr)
 ## you can run this if you want to prevent the errors that are generated
 ## by your tests from halting execution of your workflow
 tryCatch({rawData %>%
+  slice_sample(n = 1000) %>%                          # limit the example to 1000 randomly selected rows
   chain_start %>%
-  assert(within_bounds(1,Inf), weight) %>% # assert checks individual values
+  assert(within_bounds(1,Inf), weight) %>%            # assert checks individual values
   assert(within_bounds(1,Inf), length) %>%
-  insist(within_n_sds(3), weight) %>% # insist checks against calculated vals
+  insist(within_n_sds(3), weight) %>%                 # insist checks against calculated vals
   insist(within_n_sds(3), length) %>%
   chain_end
 }, warning = function(w) {
@@ -281,5 +286,5 @@ rawData$lonS <- as.numeric(lonSubstrings[,4])
 glimpse(analysisData)
 
 
-#library(knitr)
-#purl("cleaning_data.Rmd", "cleaning_data_nodocs.R", documentation = 0)
+library(knitr)
+purl("cleaning_data.Rmd", "cleaning_data_nodocs.R", documentation = 0)

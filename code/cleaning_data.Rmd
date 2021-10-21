@@ -1,8 +1,8 @@
 ---
 title: "Cleaning Data"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -18,6 +18,8 @@ GitHub Repository with this demonstration: [https://github.com/unmrds/R-data-cle
 Zipfile Download: [https://github.com/unmrds/R-data-cleaning/archive/master.zip](https://github.com/unmrds/R-data-cleaning/archive/master.zip)
 
 PDF Version of this Notebook: [https://github.com/unmrds/R-data-cleaning/raw/master/code/cleaning_data.pdf](https://github.com/unmrds/R-data-cleaning/raw/master/code/cleaning_data.pdf)
+
+Shared [RStudioCloud](https://rstudio.cloud/) version that you can copy into your account to work with: [https://rstudio.cloud/project/3081275](https://rstudio.cloud/project/3081275)
 
 Check out the **Preflight Check** to see if you have the needed R libraries installed run the `package.check.R` script in the top directory of this R project. This script will check to see if the packages are installed, and if they are not will install them. The script finishes with a listing of the currently installed packages so you can verify that the packages we need are installed. Check out the [README.md](https://github.com/unmrds/R-data-cleaning/blob/master/README.md) file in the [workshop repository](https://github.com/unmrds/R-data-cleaning) for full setup instructions. 
 
@@ -44,14 +46,18 @@ The data for this demonstration are based upon the [idigbio_rodents.csv](https:/
 
 > The idigbio_rodents.csv dataset is just over 10k records and contains data from natural history collections specimen records representing 5 genera from 4 major US collections, limited to US records. All records are from the Order Rodentia. All the data are mapped to the biodiversity data standard Darwin Core (http://rs.tdwg.org/dwc/terms/).
 
+Collins, Matthew; Paul, Deborah (2017): idigbio_rodents.csv. figshare. Dataset. [https://doi.org/10.6084/m9.figshare.5535724.v1](https://doi.org/10.6084/m9.figshare.5535724.v1) 
+
 The original data have been modified for use in this demonstration by:
 
 1. Generating new data columns (`latDMS` and `lonDMS`) for latitude and longitude that have sample coordinates presented in Degrees-Minutes-Seconds instead of the originally provided decimal degrees.
 2. Generating a column of mixed numeric and text values - `textLatDD`. 
 
+The `breaking_data.Rmd` R notebook file programmatically performs the above changes and automatically generated the `learning.csv`. 
+
 This is the `../data/learning.csv` file. These newly created columns in addition to some of the originally provided ones will be used to demonstrate a variety of data cleaning steps in R.
 
-An additional file was developed that only includes the first 10 rows of the file (including headers) but introduces a strucutral error. This file is the `../data/learning_struct.csv` file. 
+An additional file was developed that only includes the first 10 rows of the file (including headers) but introduces a structural error. This file is the `../data/learning_struct.csv` file. 
 
 ### R libraries used in the demonstration
 
@@ -61,15 +67,17 @@ For this demonstration a combination of R packages that are part of the [*Tidyve
 
 In addition to `tidyverse`, this workshop also uses the `mice`, `VIM`, and `assertr` packages. 
 
-There are currently over 14,000 R [packages](https://cran.r-project.org/web/packages/index.html) in the [Comprehensive R Archive Network (CRAN)](https://cran.r-project.org/index.html). While the tidyverse packages provide a useful degree of consistency and internal interoperablity it is strongly encouraged to examine the broad collection of R packages when working on a particular analysis problem. 
+There are currently over 14,000 R [packages](https://cran.r-project.org/web/packages/index.html) in the [Comprehensive R Archive Network (CRAN)](https://cran.r-project.org/index.html). While the tidyverse packages provide a useful degree of consistency and internal interoperability it is strongly encouraged to examine the broad collection of R packages when working on a particular analysis problem. 
 
-If you need to install any of the needed packages in your enviornment you can execute the `install.packages("<package name>")` command in the R console. 
+If you need to install any of the needed packages in your environment you can execute the `install.packages("<package name>")` command in the R console. The `package.check.R` script mentioned above will both check to see if the packages are installed, and if needed, install them. 
+
+now onto the data  processing ...
 
 ## 1. Identify and correct structural issues in the source data that prevent clean import into R data structures
 
 R can import a wide variety of *rectangular* data structures: comma-delimited, tab-delimited, excel spreadsheets, fixed-width among the many options. If there are errors in the structure of these files, R import commands may not be able to parse the lines in the data file preventing import. In these cases the returned error messages *may* provide some clues to where the errors may be found.  
 
-**One strategy for identifying potential strucutral issues in the source file is to try to import the dataset and review any errors that are returned**
+**One strategy for identifying potential structural issues in the source file is to try to import the dataset and review any errors that are returned**
 
 Let's try it first with a small file ...
 
@@ -79,6 +87,7 @@ Let's try it first with a small file ...
 library(tidyverse)
 
 # Import the source CSV file that contains a structural flaw
+# ? what does that path string in the read_csf function mean?
 rawDataStruct <- read_csv("../data/learning_struct.csv", 
                     progress = FALSE)
 
@@ -98,7 +107,9 @@ The output of the `read_csv` command and of the `problems` function indicate tha
   row col   expected     actual                          file
   7  -- 24 columns 26 columns '../data/learning_struct.csv'
 
-Let's take a look at the source data file and see if we can find the problem...
+Let's take a look at the source data file (in your favorite text editor or within the RStudio interface) and see if we can find the problem...
+
+**What did we find?**
 
 ### After the structural problem has been resolved load the full dataset for use in the rest of the workshop
 
@@ -119,15 +130,16 @@ spec(rawData)
 # Report the problems that were encountered when the data were imported.
 problems(rawData)
 
-# Display the imported table
-rawData
+# Display the first few rows of the imported table
+head(rawData, n=20)
+
 ```
 
 Some questions:
 
 1. How do the data types for the columns from this import process differ from those in the previous subset (at least before we fixed it)? Why do you think this is the case?
 2. Where there any errors identified during the import? If no, does this mean that there are no potential problems or issues with the imported data? **Let's take a look**
-3. How would you explain the values in the `eventDate` column when compared to the `year`, `month`, and `day` columns?
+3. How would you explain the values in the `eventDate` column when compared to the `year`, `month`, and `day` columns? *Hint - what do we know about timezones in this dataset?*
 4. What were the different ways in which missing data values were handled?
 
 ## 2. Checking and handling data type errors
@@ -158,7 +170,8 @@ Let's focus on the `catalogNumber` and `textLatDD` columns in our sample dataset
 ## Take a look at the types and content of a couple of columns
 spec(rawData)
 rawData %>%
-  select(catalogNumber,textLatDD)
+  select(catalogNumber,textLatDD) %>%       # let's just look at the "catalogNumber" and "textlatDD" columns
+  slice_head(n=20)                          # let's just look at the first 20 rows
 ```
 
 
@@ -166,12 +179,12 @@ rawData %>%
 ## Test the creation of a numLatDD column as a numeric column and
 ## see what rows were converted to NA
 rawData %>%
-  mutate(numLatDD = as.numeric(rawData$textLatDD)) %>%
-  filter(is.na(numLatDD)) %>%
-  select(textLatDD, numLatDD) %>%
-  print() %>%
-  group_by(textLatDD) %>%
-  summarize(count = n()) 
+  mutate(numLatDD = as.numeric(rawData$textLatDD)) %>%      # convert all of the values to numbers if possible
+  filter(is.na(numLatDD)) %>%                               # select all of the rows in the new numLat column has a NA value
+  select(textLatDD, numLatDD) %>%                           # include only the "textLatDD" and "numLatDD" columns
+  print() %>%                                               # print the resulting rows and columns
+  group_by(textLatDD) %>%                                   # aggregate rows by the content of the "textLatDD" column
+  summarize(count = n())                                    # count up the number of values in each group 
 
 ```
 
@@ -179,7 +192,7 @@ rawData %>%
 ## create a numeric column based on the previously tested conversion of 
 ## the textLatDD column
 rawData$numLatDD <- as.numeric(rawData$textLatDD)
-rawData
+head(rawData, n = 20)
 ```
 
 We can also accomplish a similar outcome by specifying the column type that should be created as part of the import process. 
@@ -199,7 +212,7 @@ spec(rawData2)
 problems(rawData2)
 
 # Display the imported table
-rawData2
+head(rawData2, n = 20)
 ```
 
 ```{r}
@@ -210,6 +223,8 @@ rawData %>%
   filter(is.na(catalogNumberTxt))
 
 ```
+What do you think would be more forgiving (i.e. less error prone), conversion from character to numeric values or the reverse?
+
 
 ## 3. Check and handle missing values
 
@@ -219,6 +234,7 @@ It is important to understand the potential impact that missing data will have o
 ########## Check and handle missing values ####################################
 
 ## Manually by printing out sum (FALSE = 0, TRUE = 1) of is.na test results
+# remember that the paste() function just lets you concatenate pieces of text (or values that can be coerced into text) into a single text string
 paste("decimalLatitude: number of NA values", 
       sum(is.na(rawData$decimalLatitude)), 
       sep = " ")
@@ -324,7 +340,7 @@ Breaking apart the `recordedBy` column using the `str_match` function from the `
 
 * Jeffrey E.F. Friedl (2006) *Mastering Regular Expressions*. 3rd Ed. O'Reilly. [http://shop.oreilly.com/product/9780596528126.do](http://shop.oreilly.com/product/9780596528126.do) and for UNM affiliates through our Safari Online Learning subscription: [https://learning.oreilly.com/library/view/mastering-regular-expressions/0596528124/](https://learning.oreilly.com/library/view/mastering-regular-expressions/0596528124/) - this is a comprehensive, in-depth treatment of regular expressions from the most simple to most complex - including disucssions of implementations of regular expression support in different programming languages. 
 * Steven Levithan, Jan Goyvaerts (2012). *Regular Expressions Cookbook*. 2nd Ed. O'Reilly. [http://shop.oreilly.com/product/0636920023630.do](http://shop.oreilly.com/product/0636920023630.do) and for UNM affiliates [https://learning.oreilly.com/library/view/regular-expressions-cookbook/9781449327453/](https://learning.oreilly.com/library/view/regular-expressions-cookbook/9781449327453/) - a good set of regular expression common problems, and their solutions in multiple language implementations. 
-* Ian Kopacka (2016). *Basic Regular Expressions in R - Cheat Sheet*. Online resource: [https://rstudio.com/wp-content/uploads/2016/09/RegExCheatsheet.pdf](https://rstudio.com/wp-content/uploads/2016/09/RegExCheatsheet.pdf)
+* Ian Kopacka (2016). *Basic Regular Expressions in R - Cheat Sheet*. Online resource: https://github.com/rstudio/cheatsheets/raw/master/regex.pdf](https://github.com/rstudio/cheatsheets/raw/master/regex.pdf)
 
 
 The following figure describes the structure of the regular expressions used in the sample code:
@@ -407,10 +423,11 @@ library(assertr)
 ## you can run this if you want to prevent the errors that are generated
 ## by your tests from halting execution of your workflow
 tryCatch({rawData %>%
+  slice_sample(n = 1000) %>%                          # limit the example to 1000 randomly selected rows
   chain_start %>%
-  assert(within_bounds(1,Inf), weight) %>% # assert checks individual values
+  assert(within_bounds(1,Inf), weight) %>%            # assert checks individual values
   assert(within_bounds(1,Inf), length) %>%
-  insist(within_n_sds(3), weight) %>% # insist checks against calculated vals
+  insist(within_n_sds(3), weight) %>%                 # insist checks against calculated vals
   insist(within_n_sds(3), length) %>%
   chain_end
 }, warning = function(w) {
@@ -482,6 +499,6 @@ Export the code from the workshop both as a documented and undocumented R script
 
 ```{r}
 #library(knitr)
-#purl("code/cleaning_data.Rmd", "code/cleaning_data_nodocs.R", documentation = 0)
+#purl("cleaning_data.Rmd", "cleaning_data_nodocs.R", documentation = 0)
 ```
 
