@@ -17,7 +17,9 @@ GitHub Repository with this demonstration: [https://github.com/unmrds/R-data-cle
 
 Zipfile Download: [https://github.com/unmrds/R-data-cleaning/archive/master.zip](https://github.com/unmrds/R-data-cleaning/archive/master.zip)
 
-Check out the **Preflight Check** to see if you have the needed R libraries installed run the `package.check.R` script in the top directory of this R project. This script will check to see if the packages are installed, and if they are not will do so. The script finishes with a listing of the currently installed packages so you can verify that the packages we need are installed. Check out the [README.md](https://github.com/unmrds/R-data-cleaning/blob/master/README.md) file in the [workshop repository](https://github.com/unmrds/R-data-cleaning) for full setup instructions. 
+PDF Version of this Notebook: [https://github.com/unmrds/R-data-cleaning/raw/master/code/cleaning_data.pdf](https://github.com/unmrds/R-data-cleaning/raw/master/code/cleaning_data.pdf)
+
+Check out the **Preflight Check** to see if you have the needed R libraries installed run the `package.check.R` script in the top directory of this R project. This script will check to see if the packages are installed, and if they are not will install them. The script finishes with a listing of the currently installed packages so you can verify that the packages we need are installed. Check out the [README.md](https://github.com/unmrds/R-data-cleaning/blob/master/README.md) file in the [workshop repository](https://github.com/unmrds/R-data-cleaning) for full setup instructions. 
 
 When planning a data analysis the first step, and often most time consuming, is the acquisition and processing of the data into a form that can be used in the analytic procedures you intend to use. Today we are going to focus on a sequence of steps that generally follow the workflow that you will find yourself going through when bringing data into R to perform an analysis. 
 
@@ -31,7 +33,7 @@ When planning a data analysis the first step, and often most time consuming, is 
 
 ### Tuning up the structure of the data to facilitate analysis
 
-4. Split up fields that contain mutiple values in a single field
+4. Split up fields that contain multiple values in a single field
 5. Check for anomalous values and otherwise explore the data to become familiar with its content and structure. 
 
 *Beyond what we will cover today* - continued structural changes and the rest of the exploration, analysis, and communication process. 
