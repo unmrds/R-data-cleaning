@@ -3,6 +3,8 @@ R tutorial for cleaning data
 
 This tutorial provides some strategies for handling issues with data that need to be resolved before they can be effectively used in visualization and analysis. 
 
+Shared [RStudioCloud](https://rstudio.cloud/) version that you can copy into your account to work with: [https://rstudio.cloud/project/3081275](https://rstudio.cloud/project/3081275)
+
 **Deal with issues that may come up when importing data files**
 
 1. Identify and correct structural issues in the source data that prevent clean import into R data structures
